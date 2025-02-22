@@ -46,6 +46,19 @@ def _get_db_key(item_type: ItemType, tenant_id: str, item_id: Optional[str] = No
 
     return f"{tenant_id}{KEY_DELIMITER}{item_type.value}"
 
+def validate_item_data(item_data: Mapping[str, Any]) -> bool:
+    """
+    Validate the incoming item data.
+    :param item_data: data to store with item
+    :return: True if valid, False otherwise
+    """
+    # For example, check if required fields are present
+    required_fields = ["success", "text"]
+    for field in required_fields:
+        if field not in item_data:
+            logger.error(f"Validation failed: Missing required field '{field}'")
+            return False
+    return True
 
 @dataclass(frozen=True)
 class ItemKeys:
@@ -128,3 +141,38 @@ class Db:
             raise ItemNotFound(item_type.value, tenant_id, item_id)
 
         return response.get("Item").get("data")
+    
+    @staticmethod
+    @start_span("database_update_item")
+    def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]):
+        """
+        Update new item information in database
+        :param item_type: One of the types from ItemType
+        :param tenant_id: item tenant
+        :param item_id: item id
+        :param item_data: data to store with item
+        """
+        logger.info(f"Putting item from DB for item [{item_id}] for tenant [{tenant_id}]")
+
+        try:
+            if not validate_item_data(item_data):
+                logger.error("Item data validation failed")
+                raise ValueError("Invalid item data")
+
+            keys: ItemKeys = ItemKeys.get_keys(item_type, tenant_id, item_id)
+            item = {PK_KEY: keys.primary, ITEM_ID_ATTRIBUTE: item_id}
+            if item_data:
+                item[DATA_ATTRIBUTE] = item_data
+            kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
+            try:
+                restricted_table(TABLE_NAME, tenant_id).put_item(**kwargs)
+            except ClientError as client_error:
+                error = client_error.response.get("Error", {})
+                error_code = error.get("Code", "")
+                logger.error(f"Error Code: [{error_code}]")
+                if error_code == "ConditionalCheckFailedException":
+                    raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
+                raise
+        except ValueError as ve:
+            logger.error(f"ValueError: {ve}")
+            raise

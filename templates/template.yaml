@@ -294,6 +294,26 @@ Resources:
           RESTRICTED_ROLE: !GetAtt 'DeploymentHooksRole.Arn'
       DeploymentPreference:
         Enabled: false
+  
+  UpdateItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.update_item
+      Role: !GetAtt 'ReadOnlyRole.Arn'
+      Environment:
+        Variables:
+          RESTRICTED_ROLE: !GetAtt 'ReadOnlyRoleAssume.Arn'
+      CodeUri: ../cookiecutter
+      DeploymentPreference:
+        Type: AllAtOnce
+        Role: !ImportValue CODEDEPLOY-ROLE-ARN
+      Events:
+        GetItem:
+          Type: Api
+          Properties:
+            Method: put
+            Path: /items/{item_id}
+            RestApiId: !Ref API
 
   Database:
     Type: AWS::DynamoDB::Table

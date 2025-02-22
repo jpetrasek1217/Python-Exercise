@@ -80,6 +80,28 @@ paths:
         passthroughBehavior: when_no_match
         uri:
           Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${GetItem.Arn}:live/invocations
+    put:
+      operationId: update_item
+      summary: Update Item
+      description: Create items in the database
+      parameters:
+        - $ref: '#/components/parameters/item_id'
+      responses:
+        '200':
+          $ref: '#/components/responses/GetItemResponse'
+        '400':
+          $ref: '#/components/responses/400BadRequestErrorResponse'
+        '404':
+          $ref: '#/components/responses/404NotFoundErrorResponse'
+      tags:
+        - cookiecutter
+      security:
+        - BearerToken: []
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateItem.Arn}:live/invocations
 components:
   parameters:
     item_id:
