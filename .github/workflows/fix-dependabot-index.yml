@@ -1,0 +1,17 @@
+name: Fix Dependabot Inserted Index
+
+on:
+    pull_request:
+
+permissions:
+    contents: write
+
+jobs:
+    fix-dependabot-index:
+        runs-on: ubuntu-latest
+        steps:
+            - name: Fix Dependabot Inserted Index
+              uses: evertz-fbrnd/dependabot-actions/dependabot-index-fix@v2
+              with:
+                  codeartifact_auth_token: ${{secrets.CODE_ARTIFACT_TOKEN_EVERTZ_IO}}
+                  python_version: '3.9'
