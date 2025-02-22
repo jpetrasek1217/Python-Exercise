@@ -31,7 +31,7 @@ jobs:
 
           ./build_scripts/run_linters.sh
       - name: Publish Coverage Report as Comment
-        uses: MishaKav/pytest-coverage-comment@v1.1.52
+        uses: MishaKav/pytest-coverage-comment@v1.1.53
         with:
           pytest-xml-coverage-path: coverage.xml
           junitxml-path: junit.xml
