@@ -2,8 +2,9 @@
 Manage items.
 """
 
-import datetime
+from datetime import datetime, timezone
 import uuid
+from errors import ItemNotFound
 
 from evertz_io_observability.decorators import start_span
 
@@ -59,3 +60,32 @@ class Service:
             # tests errors here
             raise error
         return item
+    
+    @start_span("service_update_item")
+    def update_item(self, item_id: str, item_data: dict) -> dict:
+        """
+        Update item
+
+        :param item_id: the item id to be updated
+        :param item_data: the data the item is being updated with
+
+        :return: The updated item dict
+        """
+        logger.info(f"Updating Item: {item_id} with data {item_data}")
+        now = datetime.now(tz=timezone.utc).isoformat()
+        item_data["modification_info"] = {
+            "last_modified_at": now,
+            "last_modified_by": self.user_id,
+        }
+
+        try:
+            self.database.update_item(
+                item_type=ItemType.ITEM, tenant_id=self.tenant_id, item_id=item_id, item_data=item_data
+            )
+            return item_data
+        except ItemNotFound:
+            logger.exception(f"Item with ID {item_id} not found.")
+            raise
+        except Exception as error:
+            logger.error(f"Error updating item: {error}")
+            raise
