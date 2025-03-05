@@ -62,6 +62,7 @@ Globals:
       Variables:
         DYNAMODB_TABLE: !Ref Database
         LOG_LEVEL: !Ref LogLevel
+        EVENTS_TOPIC: '{{resolve:ssm:/infrastructure/event-driven-architecture/topic/arn:1}}'
         OPENTELEMETRY_COLLECTOR_CONFIG_FILE: '{{resolve:ssm:/honeycomb/config/path:1}}'
         OTEL_SERVICE_NAME: !Ref 'Project'
         OTEL_PROPAGATORS: tracecontext
@@ -257,6 +258,46 @@ Resources:
           Properties:
             Method: post
             Path: /items
+            RestApiId: !Ref API
+
+  UpdateItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.update_item
+      Role: !GetAtt 'ReadOnlyRole.Arn'
+      Environment:
+        Variables:
+          RESTRICTED_ROLE: !GetAtt 'DatabaseWriteRoleAssume.Arn'
+      CodeUri: ../cookiecutter
+      DeploymentPreference:
+        Type: AllAtOnce
+        Role: !ImportValue CODEDEPLOY-ROLE-ARN
+      Events:
+        CreateItem:
+          Type: Api
+          Properties:
+            Method: put
+            Path: /items/{item_id}
+            RestApiId: !Ref API
+
+  DeleteItem:
+    Type: AWS::Serverless::Function
+    Properties:
+      Handler: handler.delete_item
+      Role: !GetAtt 'ReadOnlyRole.Arn'
+      Environment:
+        Variables:
+          RESTRICTED_ROLE: !GetAtt 'DatabaseWriteRoleAssume.Arn'
+      CodeUri: ../cookiecutter
+      DeploymentPreference:
+        Type: AllAtOnce
+        Role: !ImportValue CODEDEPLOY-ROLE-ARN
+      Events:
+        CreateItem:
+          Type: Api
+          Properties:
+            Method: delete
+            Path: /items/{item_id}
             RestApiId: !Ref API
 
   GetItemPreTrafficHook:

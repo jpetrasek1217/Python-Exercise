@@ -67,7 +67,7 @@ def api_gateway_event():
             "protocol": "HTTPS",
             "time": datetime.datetime.now().timestamp(),
             "timeEpoch": datetime.datetime.now(),
-            "requestTime": str(datetime.datetime.now().timestamp()),
+            "requestTime": datetime.datetime.now().timestamp(),
             "requestTimeEpoch": datetime.datetime.now(),
             "http": {
                 "method": method,
@@ -109,7 +109,7 @@ def api_gateway_event():
             "path": path,
             "pathParameters": path_params,
             "isBase64Encoded": False,
-            "version": "1.1",
+            "version": 1.1,
             "rawPath": path,
             "rawQueryString": "test",
             "routeKey": "test",
@@ -143,5 +143,40 @@ def create_correct_item_event(jwts, api_gateway_event):
 def get_not_existing_item_event(jwts, api_gateway_event):
     path_params = ItemIdPathParam(item_id="does-not-exist")
     event, context = api_gateway_event(path="/get_item/does-not-exist", method="GET", path_params=path_params.dict())
+    event["headers"]["Authorization"] = jwts["IdToken"]
+    yield event, context
+
+@pytest.fixture()
+def update_correct_item_event(jwts, api_gateway_event):
+    path_params = ItemIdPathParam(item_id=ITEM_ID)
+    item_data = Item(success=True, text="Updated text")
+    event, context = api_gateway_event(path=f"/update_item/{ITEM_ID}", method="PUT", path_params=path_params.dict(), body=item_data.json())
+    event["headers"]["Authorization"] = jwts["IdToken"]
+    yield event, context
+
+@pytest.fixture()
+def update_not_existing_item_event(jwts, api_gateway_event):
+    path_params = ItemIdPathParam(item_id="does-not-exist")
+    item_data = Item(success=True, text="Updated text")
+    event, context = api_gateway_event(
+        path=f"/update_item/does-not-exist", method="PUT", path_params=path_params.dict(), body=item_data.json()
+    )
+    event["headers"]["Authorization"] = jwts["IdToken"]
+    yield event, context
+
+@pytest.fixture()
+def delete_correct_item_event(jwts, api_gateway_event):
+    path_params = ItemIdPathParam(item_id=ITEM_ID)
+    item_data = Item(success=True, text="Deleted text")
+    event, context = api_gateway_event(path=f"/delete_item/{ITEM_ID}", method="DELETE", path_params=path_params.dict(), body=item_data.json())
+    event["headers"]["Authorization"] = jwts["IdToken"]
+    yield event, context
+
+@pytest.fixture()
+def delete_not_existing_item_event(jwts, api_gateway_event):
+    path_params = ItemIdPathParam(item_id="does-not-exist")
+    item_data = Item(success=True, text="Deleted text")
+    event, context = api_gateway_event(
+        path=f"/delete_item/does-not-exist", method="DELETE", path_params=path_params.dict())
     event["headers"]["Authorization"] = jwts["IdToken"]
     yield event, context

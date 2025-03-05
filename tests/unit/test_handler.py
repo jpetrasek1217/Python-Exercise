@@ -74,3 +74,48 @@ class TestHandler:
         body = json.loads(response["body"])
         assert "errors" in body
         assert body["errors"][0]["code"] == "ItemConflict"
+
+    @patch("handler.Db")
+    def test_update_item_success(self, mock_db, update_correct_item_event):
+        event, context = update_correct_item_event
+
+        mock_db.return_value = MockDb()
+        response = handler.update_item(event, context)
+        assert response["statusCode"] == HTTPStatus.OK
+        body = json.loads(response["body"])
+        assert body == {"success": True, "text": "Updated text"}
+        headers = response["headers"]
+        assert headers["Content-Type"] == "application/vnd.api+json"
+
+    @patch("handler.Db")
+    def test_update_item_not_found(self, mock_db, update_not_existing_item_event):
+        event, context = update_not_existing_item_event
+
+        mock_db.return_value = MockDb()
+        response = handler.update_item(event, context)
+        assert response["statusCode"] == HTTPStatus.NOT_FOUND
+        body = json.loads(response["body"])
+        assert "errors" in body
+        assert body["errors"][0]["code"] == "ItemNotFound"
+
+    @patch("handler.Db")
+    def test_delete_item_success(self, mock_db, delete_correct_item_event):
+        event, context = delete_correct_item_event
+
+        mock_db.return_value = MockDb()
+        response = handler.delete_item(event, context)
+        assert response["statusCode"] == HTTPStatus.NO_CONTENT
+        headers = response["headers"]
+        assert headers["Content-Type"] == "application/vnd.api+json"
+        assert response["body"] == ""
+
+    @patch("handler.Db")
+    def test_delete_item_not_found(self, mock_db, delete_not_existing_item_event):
+        event, context = delete_not_existing_item_event
+
+        mock_db.return_value = MockDb()
+        response = handler.delete_item(event, context)
+        assert response["statusCode"] == HTTPStatus.NOT_FOUND
+        body = json.loads(response["body"])
+        assert "errors" in body
+        assert body["errors"][0]["code"] == "ItemNotFound"
