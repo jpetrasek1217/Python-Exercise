@@ -2,14 +2,14 @@
 Manage items.
 """
 
-from datetime import datetime, timezone
 import uuid
-from errors import ItemNotFound
+from datetime import datetime, timezone
 
 from evertz_io_observability.decorators import start_span
 
 from context import logger
 from db import Db, ItemType
+from errors import ItemNotFound
 
 
 class Service:
@@ -41,7 +41,7 @@ class Service:
         :return: Dict
         """
         logger.info(f"Creating Item: {item}")
-        now = datetime.datetime.utcnow().isoformat()
+        now = datetime.utcnow().isoformat()
         item["modification_info"] = {
             "created_at": now,
             "created_by": self.user_id,
@@ -60,7 +60,7 @@ class Service:
             # tests errors here
             raise error
         return item
-    
+
     @start_span("service_update_item")
     def update_item(self, item_id: str, item_data: dict) -> dict:
         """
@@ -102,10 +102,7 @@ class Service:
         logger.info(f"Deleting Item: {item_id}")
 
         try:
-            self.database.delete_item(
-                item_type=ItemType.ITEM, tenant_id=self.tenant_id, item_id=item_id
-            )
-            return
+            return self.database.delete_item(item_type=ItemType.ITEM, tenant_id=self.tenant_id, item_id=item_id)
         except ItemNotFound:
             logger.exception(f"Item with ID {item_id} not found.")
             raise

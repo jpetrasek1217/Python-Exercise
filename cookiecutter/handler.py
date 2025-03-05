@@ -158,7 +158,7 @@ def update_item(event: ItemModel, context: LambdaContext) -> dict:
     logger.info(f"Event: {event}")
     logger.info(f"Context: {context}")
 
-    identity = get_identity_from_event(event=event.dict(), verify=False) 
+    identity = get_identity_from_event(event=event.dict(), verify=False)
     path_parameters = ItemIdPathParam.validate(event.pathParameters)
     item_id = path_parameters.item_id
     tenant_id = identity.tenant
@@ -204,6 +204,7 @@ def update_item(event: ItemModel, context: LambdaContext) -> dict:
             "body": ErrorsBody(errors=[error_context]).json(),
         }
     return response
+
 
 def delete_item(event: ItemModel, context: LambdaContext) -> dict:
     """

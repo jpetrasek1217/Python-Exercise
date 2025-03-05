@@ -46,6 +46,7 @@ def _get_db_key(item_type: ItemType, tenant_id: str, item_id: Optional[str] = No
 
     return f"{tenant_id}{KEY_DELIMITER}{item_type.value}"
 
+
 def validate_item_data(item_data: Mapping[str, Any]) -> bool:
     """
     Validate the incoming item data.
@@ -59,6 +60,7 @@ def validate_item_data(item_data: Mapping[str, Any]) -> bool:
             logger.error(f"Validation failed: Missing required field '{field}'")
             return False
     return True
+
 
 @dataclass(frozen=True)
 class ItemKeys:
@@ -141,7 +143,7 @@ class Db:
             raise ItemNotFound(item_type.value, tenant_id, item_id)
 
         return response.get("Item").get("data")
-    
+
     @staticmethod
     @start_span("database_update_item")
     def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]):
@@ -192,14 +194,10 @@ class Db:
         kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
 
         try:
-            restricted_table(TABLE_NAME, tenant_id).delete_item(**kwargs)
+            response = restricted_table(TABLE_NAME, tenant_id).delete_item(**kwargs)
         except ClientError as client_error:
             error = client_error.response.get("Error", {})
             error_code = error.get("Code", "")
             logger.error(f"Error Code: [{error_code}]")
-            if error_code == "ConditionalCheckFailedException":
-                raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
-            raise
-        except ValueError as ve:
-            logger.error(f"ValueError: {ve}")
-            raise
+            raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
+        return response
