@@ -28,19 +28,19 @@ class MockDb(Db):
             return {"success": True, "text": "Hello"}
         else:
             raise ItemConflict(item_type.value, tenant_id, item_id)
-        
+
     @staticmethod
-    def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]):
+    def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any] = None):
         if (
             ItemKeys.get_keys(item_type=ItemType.ITEM, tenant_id=TENANT_ID, item_id=ITEM_ID).primary
             == ItemKeys.get_keys(item_type=ItemType.ITEM, tenant_id=tenant_id, item_id=item_id).primary
         ):
-            return {"success": True, "text": "test text"}
+            return {"success": True, "text": "Updated text"}
         else:
             raise ItemNotFound(item_type.value, tenant_id, item_id)
 
     @staticmethod
-    def delete_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]):
+    def delete_item(item_type: ItemType, tenant_id: str, item_id: str):
         if (
             ItemKeys.get_keys(item_type=ItemType.ITEM, tenant_id=TENANT_ID, item_id=ITEM_ID).primary
             == ItemKeys.get_keys(item_type=ItemType.ITEM, tenant_id=tenant_id, item_id=item_id).primary

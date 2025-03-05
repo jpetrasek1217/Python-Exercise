@@ -146,7 +146,7 @@ class Db:
 
     @staticmethod
     @start_span("database_update_item")
-    def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]):
+    def update_item(item_type: ItemType, tenant_id: str, item_id: str, item_data: Mapping[str, Any]) -> dict[str, Any]:
         """
         Update new item information in database
         :param item_type: One of the types from ItemType
@@ -167,7 +167,7 @@ class Db:
                 item[DATA_ATTRIBUTE] = item_data
             kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
             try:
-                restricted_table(TABLE_NAME, tenant_id).put_item(**kwargs)
+                return restricted_table(TABLE_NAME, tenant_id).put_item(**kwargs)
             except ClientError as client_error:
                 error = client_error.response.get("Error", {})
                 error_code = error.get("Code", "")
@@ -181,7 +181,7 @@ class Db:
 
     @staticmethod
     @start_span("database_delete_item")
-    def delete_item(item_type: ItemType, tenant_id: str, item_id: str):
+    def delete_item(item_type: ItemType, tenant_id: str, item_id: str) -> dict[str, Any]:
         """
         Delete new item information in database
         :param item_type: One of the types from ItemType

@@ -205,7 +205,10 @@ def update_item(event: ItemModel, context: LambdaContext) -> dict:
         }
     return response
 
-
+# pylint: disable=no-value-for-parameter
+@export_trace(export_service=ExportService.OTEL_COLLECTOR_LAYER)
+@join_trace(event_source=EventSource.API_GATEWAY_REQUEST)
+@event_parser(model=ItemModel)
 def delete_item(event: ItemModel, context: LambdaContext) -> dict:
     """
     Delete an item
@@ -228,11 +231,11 @@ def delete_item(event: ItemModel, context: LambdaContext) -> dict:
     # Database served as dependency injection here, so it will be easier to test this or mock it base on level 0
     service = Service(Db(), tenant_id, identity.sub)
     try:
-        existing_item = service.delete_item(item_id=item_id)
+        service.delete_item(item_id=item_id)
         response = {
-            "statusCode": HTTPStatus.OK,
+            "statusCode": HTTPStatus.NO_CONTENT,
             "headers": Headers(content_type="application/vnd.api+json").dict(by_alias=True),
-            "body": Item(**existing_item).json(),
+            "body": "",
         }
     except ItemNotFound as error:
         error_context = {
