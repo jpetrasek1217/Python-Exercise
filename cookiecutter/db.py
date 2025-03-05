@@ -176,3 +176,30 @@ class Db:
         except ValueError as ve:
             logger.error(f"ValueError: {ve}")
             raise
+
+    @staticmethod
+    @start_span("database_delete_item")
+    def delete_item(item_type: ItemType, tenant_id: str, item_id: str):
+        """
+        Delete new item information in database
+        :param item_type: One of the types from ItemType
+        :param tenant_id: item tenant
+        :param item_id: item id
+        """
+        logger.info(f"Deleting item [{item_id}] from DB for tenant [{tenant_id}]")
+        keys: ItemKeys = ItemKeys.get_keys(item_type, tenant_id, item_id)
+        item = {PK_KEY: keys.primary, ITEM_ID_ATTRIBUTE: item_id}
+        kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
+
+        try:
+            restricted_table(TABLE_NAME, tenant_id).delete_item(**kwargs)
+        except ClientError as client_error:
+            error = client_error.response.get("Error", {})
+            error_code = error.get("Code", "")
+            logger.error(f"Error Code: [{error_code}]")
+            if error_code == "ConditionalCheckFailedException":
+                raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
+            raise
+        except ValueError as ve:
+            logger.error(f"ValueError: {ve}")
+            raise

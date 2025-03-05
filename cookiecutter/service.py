@@ -89,3 +89,26 @@ class Service:
         except Exception as error:
             logger.error(f"Error updating item: {error}")
             raise
+
+    @start_span("service_delete_item")
+    def delete_item(self, item_id: str) -> dict:
+        """
+        Update item
+
+        :param item_id: the item id to be updated
+
+        :return: The deleted item dict
+        """
+        logger.info(f"Deleting Item: {item_id}")
+
+        try:
+            self.database.delete_item(
+                item_type=ItemType.ITEM, tenant_id=self.tenant_id, item_id=item_id
+            )
+            return
+        except ItemNotFound:
+            logger.exception(f"Item with ID {item_id} not found.")
+            raise
+        except Exception as error:
+            logger.error(f"Error deleting item: {error}")
+            raise
