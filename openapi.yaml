@@ -101,7 +101,29 @@ paths:
         type: aws_proxy
         httpMethod: POST
         uri:
-          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${CreateItem.Arn}:live/invocations
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${UpdateItem.Arn}:live/invocations
+    delete:
+      operationId: delete_item
+      summary: Delete Item
+      description: Deletes an item from the database
+      parameters:
+        - $ref: '#/components/parameters/item_id'
+      responses:
+        '204':
+          description: Item deleted successfully
+        '400':
+          $ref: '#/components/responses/400BadRequestErrorResponse'
+        '404':
+          $ref: '#/components/responses/404NotFoundErrorResponse'
+      tags:
+        - cookiecutter
+      security:
+        - BearerToken: []
+      x-amazon-apigateway-integration:
+        type: aws_proxy
+        httpMethod: POST
+        uri:
+          Fn::Sub: arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${DeleteItem.Arn}:live/invocations
 components:
   parameters:
     item_id:
