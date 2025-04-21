@@ -87,7 +87,7 @@ class Service:
             logger.exception(f"Item with ID {item_id} not found.")
             raise
         except Exception as error:
-            logger.error(f"Error updating item: {error}")
+            logger.exception(f"Error updating item with item_id {item_id}: {error}")
             raise
 
     @start_span("service_delete_item")
@@ -107,5 +107,5 @@ class Service:
             logger.exception(f"Item with ID {item_id} not found.")
             raise
         except Exception as error:
-            logger.error(f"Error deleting item: {error}")
+            logger.exception(f"Error deleting item with item_id {item_id}: {error}")
             raise

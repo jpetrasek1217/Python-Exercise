@@ -1,7 +1,7 @@
 from typing import Any, Mapping
 
-from db import Db, ItemKeys, ItemType
-from errors import ItemConflict, ItemNotFound
+from cookiecutter.db import Db, ItemKeys, ItemType
+from cookiecutter.errors import ItemConflict, ItemNotFound
 from tests.data.data_constants import ITEM_ID, TENANT_ID
 
 

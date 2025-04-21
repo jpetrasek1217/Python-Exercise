@@ -16,13 +16,12 @@ from evertz_io_observability.decorators import join_trace
 from evertz_io_observability.otel_collector import export_trace
 from evertz_io_observability.target_services import ExportService
 from lambda_event_sources.event_sources import EventSource
-
+from data_validation import validate_item_data
 from context import logger
 from db import Db
 from errors import ItemConflict, ItemNotFound
 from models import ErrorsBody, Headers, Item, ItemIdPathParam, ItemModel
 from service import Service
-
 
 # pylint: disable=no-value-for-parameter
 @export_trace(export_service=ExportService.OTEL_COLLECTOR_LAYER)
@@ -167,6 +166,11 @@ def update_item(event: ItemModel, context: LambdaContext) -> dict:
 
     logger.info(f"Updating Item [{item_id}] with data: {item_data}")
     logger.info(f"With Tenant Context: [{tenant_id}]")
+    try: 
+        validate_item_data(item_data)
+    except ValueError as val_err:
+        logger.error(f"Validation of data [item_id: {item_id}] failed: {val_err}")
+        raise
 
     # Database served as dependency injection here, so it will be easier to test this or mock it base on level 0
     service = Service(Db(), tenant_id, identity.sub)
@@ -204,6 +208,7 @@ def update_item(event: ItemModel, context: LambdaContext) -> dict:
             "body": ErrorsBody(errors=[error_context]).json(),
         }
     return response
+
 
 # pylint: disable=no-value-for-parameter
 @export_trace(export_service=ExportService.OTEL_COLLECTOR_LAYER)

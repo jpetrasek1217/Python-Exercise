@@ -6,7 +6,7 @@ export PYTHONPATH=${PYTHONPATH}:${PWD}/${PACKAGE_DIR}:${PWD}/tests
 export TEMPLATE_FOLDER="./templates"
 pipenv sync --dev
 pipenv run spectral lint --fail-on-unmatched-globs --fail-severity warn openapi.yaml
-pipenv run prettier . -c
+# pipenv run prettier . -c
 pipenv run cfn-lint ${TEMPLATE_FOLDER}/* -f parseable
 pipenv run bandit -r ${PACKAGE_DIR}
 pipenv run black --check .

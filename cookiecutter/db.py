@@ -15,6 +15,7 @@ from evertz_io_observability.decorators import start_span
 from config import TABLE_NAME
 from context import logger
 from errors import ItemConflict, ItemNotFound
+from botocore.exceptions import ClientError
 
 # String used as the delimiter for separating information in the overloaded keys
 KEY_DELIMITER = "#"
@@ -45,22 +46,6 @@ def _get_db_key(item_type: ItemType, tenant_id: str, item_id: Optional[str] = No
         return f"{tenant_id}{KEY_DELIMITER}{item_type.value}{KEY_DELIMITER}{item_id}"
 
     return f"{tenant_id}{KEY_DELIMITER}{item_type.value}"
-
-
-def validate_item_data(item_data: Mapping[str, Any]) -> bool:
-    """
-    Validate the incoming item data.
-    :param item_data: data to store with item
-    :return: True if valid, False otherwise
-    """
-    # For example, check if required fields are present
-    required_fields = ["success", "text"]
-    for field in required_fields:
-        if field not in item_data:
-            logger.error(f"Validation failed: Missing required field '{field}'")
-            return False
-    return True
-
 
 @dataclass(frozen=True)
 class ItemKeys:
@@ -130,15 +115,11 @@ class Db:
         :return: item's data
         """
         logger.info(f"Fetching {item_type.value} [{item_id}] from DB for tenant: [{tenant_id}]")
-
         keys: ItemKeys = ItemKeys.get_keys(item_type, tenant_id, item_id)
         kwargs: dict[str, Any] = {"Key": {PK_KEY: keys.primary}}
-
         if fields:
             kwargs.update(projection_expression(fields, path_prefix=DATA_ATTRIBUTE))
-
         response = restricted_table(TABLE_NAME, tenant_id).get_item(**kwargs)
-
         if response.get("Item") is None:
             raise ItemNotFound(item_type.value, tenant_id, item_id)
 
@@ -156,27 +137,19 @@ class Db:
         """
         logger.info(f"Putting item from DB for item [{item_id}] for tenant [{tenant_id}]")
 
+        keys: ItemKeys = ItemKeys.get_keys(item_type, tenant_id, item_id)
+        item = {PK_KEY: keys.primary, ITEM_ID_ATTRIBUTE: item_id}
+        if item_data:
+            item[DATA_ATTRIBUTE] = item_data
+        kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
         try:
-            if not validate_item_data(item_data):
-                logger.error("Item data validation failed")
-                raise ValueError("Invalid item data")
-
-            keys: ItemKeys = ItemKeys.get_keys(item_type, tenant_id, item_id)
-            item = {PK_KEY: keys.primary, ITEM_ID_ATTRIBUTE: item_id}
-            if item_data:
-                item[DATA_ATTRIBUTE] = item_data
-            kwargs = {"Item": item, "ConditionExpression": Attr(PK_KEY).not_exists()}
-            try:
-                return restricted_table(TABLE_NAME, tenant_id).put_item(**kwargs)
-            except ClientError as client_error:
-                error = client_error.response.get("Error", {})
-                error_code = error.get("Code", "")
-                logger.error(f"Error Code: [{error_code}]")
-                if error_code == "ConditionalCheckFailedException":
-                    raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
-                raise
-        except ValueError as ve:
-            logger.error(f"ValueError: {ve}")
+            return restricted_table(TABLE_NAME, tenant_id).put_item(**kwargs)
+        except ClientError as client_error:
+            error = client_error.response.get("Error", {})
+            error_code = error.get("Code", "")
+            logger.error(f"Error Code: [{error_code}]")
+            if error_code == "ConditionalCheckFailedException":
+                raise ItemConflict(item_type.value, tenant_id, item_id) from client_error
             raise
 
     @staticmethod
