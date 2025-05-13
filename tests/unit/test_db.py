@@ -1,5 +1,5 @@
 import pytest
-from cookiecutter.errors import ItemNotFound
+from errors import ItemNotFound
 from unittest.mock import patch, MagicMock
 from botocore.exceptions import ClientError
 from db import Db, ItemType, ItemConflict
